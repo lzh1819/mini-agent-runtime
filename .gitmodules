@@ -1,0 +1,12 @@
+[submodule "references/pi"]
+	path = references/pi
+	url = https://github.com/earendil-works/pi.git
+[submodule "references/openai-agents-python"]
+	path = references/openai-agents-python
+	url = https://github.com/openai/openai-agents-python.git
+[submodule "references/mini-swe-agent"]
+	path = references/mini-swe-agent
+	url = https://github.com/SWE-agent/mini-swe-agent.git
+[submodule "references/learn-claude-code"]
+	path = references/learn-claude-code
+	url = https://github.com/shareAI-lab/learn-claude-code.git

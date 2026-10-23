@@ -174,24 +174,16 @@ mini-agent-runtime/
 | mini-swe-agent | 对照极简循环与执行环境 | [SWE-agent/mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent) |
 | learn-claude-code | 对照逐层递进的 Harness 教学实现 | [shareAI-lab/learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) |
 
-推荐采用 **Git submodule**，将第三方源码固定到 Git 所记录的 Commit，而不是复制源码或始终跟踪 `main`。在一个**尚未添加 submodule 的新研究仓库**中执行一次：
+四个参考仓库采用 **Git submodule**，版本与下载状态见 [`research/references.md`](research/references.md)。`.gitmodules` 记录仓库地址和路径，主项目的 Git 提交记录每个子模块的具体 Commit；参考源码保留自己的历史，不作为 Python 运行时依赖。
 
-```bash
-git submodule add https://github.com/earendil-works/pi.git references/pi
-git submodule add https://github.com/openai/openai-agents-python.git references/openai-agents-python
-git submodule add https://github.com/SWE-agent/mini-swe-agent.git references/mini-swe-agent
-git submodule add https://github.com/shareAI-lab/learn-claude-code.git references/learn-claude-code
-
-git -C references/pi checkout 7c22a93d0ed02092142fa63823e63d76aa4e2406
-git add .gitmodules references/
-git commit -m "research: pin reference repositories"
-```
-
-其他三个项目在首次专题对照时记录所用的 Commit，**本 README 不假称它们已完成源码审阅**。克隆已经设置好 submodule 的研究仓库后，运行：
+克隆本项目后，在项目根目录恢复所记录的源码版本：
 
 ```bash
 git submodule update --init --recursive
+git submodule status
 ```
+
+Pi 固定到研究报告的 `7c22a93d0ed02092142fa63823e63d76aa4e2406`。其余三个仓库记录下载时的 Commit，状态为“已下载，尚未审阅”；下载不代表完成研究或通过测试。正常恢复使用上述命令，不使用 `--remote` 自动切换到上游新版本。参考版本更新应作为独立研究步骤记录原因、差异和新 Commit。
 
 ## 5. 研究与实现路线
 
