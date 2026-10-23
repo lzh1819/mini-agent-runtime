@@ -37,9 +37,9 @@
 - **研究日期**：2026-10-22
 - **研究报告**：[`research/pi-source-study.md`](research/pi-source-study.md)
 
-**状态**：R0 核心源码路径研究已形成报告；V0 Python 实现尚待开始。R0 审阅了核心执行链及部分测试断言，且仅对 Pi 的原始 EventStream 模块做过 5 项隔离运行验证；**没有完成全仓库审计或跑通 Pi 全量测试**。后续每个专题仍需回到源码继续核对。
+**状态**：R0 核心源码路径研究已形成报告；V0 Python 实现已从单次文本 Fake Model 开始。R0 审阅了核心执行链及部分测试断言，且仅对 Pi 的原始 EventStream 模块做过 5 项隔离运行验证；**没有完成全仓库审计或跑通 Pi 全量测试**。后续每个专题仍需回到源码继续核对。
 
-Python 构建配置与基础包目录已经存在，包骨架已整理。当前可以构建、安装并导入 `mini_agent_runtime`，但尚无模型协议、Provider、AgentLoop、工具或 CLI。包构建验证不代表 Agent Runtime 已实现。
+Python 构建配置与基础包目录已经存在，包骨架已整理。当前可以构建、安装并导入 `mini_agent_runtime`；`mini_agent_runtime.fake.generate()` 接收文本，返回固定模板的模拟回答，支持显式模拟异常。但尚无消息协议、真实 Provider、AgentLoop、工具或 CLI；Fake Model 不验证真实模型能力。
 
 此 README 记录当前研究方向与候选路线。每轮结合实际实现状态、源码证据和实验结果确定下一目标；路线或技术选择调整时记录原因。
 
@@ -97,13 +97,14 @@ Session Entries（可追溯的原始记录）
 
 ## 4. 仓库组织
 
-### 当前包骨架与构建验证
+### 当前源码与构建验证
 
 ```text
 pyproject.toml                  # 项目元数据、构建后端和开发依赖
 src/
 └── mini_agent_runtime/
     ├── __init__.py              # 包说明；导入包时执行的入口
+    ├── fake.py                  # 单次文本调用的教学替身
     └── py.typed                 # 向类型检查工具声明包提供类型信息
 ```
 
@@ -301,10 +302,19 @@ V1–V5 的以下描述是对应主题的候选方案与验收关注点；具体
 
 1. 查看当前状态和 [`LEARNING.md`](LEARNING.md)，借助 [`research/pi-source-study.md`](research/pi-source-study.md) 定位已有研究与待解决问题。
 2. 按 [`research/references.md`](research/references.md) 核对参考版本。已有消息与工具调用研究见 [`research/pi-messages-and-tool-flow.md`](research/pi-messages-and-tool-flow.md)，其中字段对照供查阅，不是必须实现的清单。
-3. 当前建议从“用户输入一句话，模型返回一句话”确定最小数据需求；带着该目标核对 Pi 的相关源码，再决定 Python 实现与验证范围。后续由 Fake Provider、工具调用等具体场景推动扩展。
+3. 当前已用字符串输入与输出实现单次文本 Fake Model，范围和源码依据见 [`research/pi-messages-and-tool-flow.md`](research/pi-messages-and-tool-flow.md) 第 9 节。下一主题建议研究“下一次请求需要知道之前的问答”，再推导角色、内容和历史列表。
 4. 每完成一个教学步骤，验证并讲解结果，更新学习记录、必要的研究证据与本地提交，再分析下一目标。
 
 当前构建配置要求 **Python 3.11+**，已声明 pytest 开发依赖。现有包骨架支持构建与导入；同步或异步协议、流式接口等具体选择，在相应学习步骤中根据目标与证据确定。
+
+在项目根目录体验当前实现并运行测试（需要 uv；首次运行会准备项目环境）：
+
+```bash
+uv run python -c 'from mini_agent_runtime.fake import generate; print(generate("你好"))'
+uv run pytest -q
+```
+
+预期回答为 `模拟回答：你好`。`generate("你好", error=RuntimeError("模拟失败"))` 会抛出给定异常；`error` 是教学替身的失败模拟参数。文本输入按原样保留，包括空字符串与空白；非字符串输入抛出 `TypeError`。当前没有网络请求或跨调用历史。
 
 ## 10. 核心源码入口
 

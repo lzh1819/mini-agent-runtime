@@ -291,3 +291,39 @@ V0 建议仅支持开头的 system 状态：`tools_added` 可为空，表示没�
 本表是可追溯的设计对照，尚未验证 Python 行为。落实时至少需要检查：调用 ID 与结果关联、参数错误原因的保留、终止状态不被误标为成功、时间戳单位一致，以及暂不支持的内容不会被悄悄丢弃。
 
 `dataclass` 和类型标注负责表达形状，不自动完成信任边界校验；单条消息也不能独自验证整段 transcript 的关联和位置。下一步应先说明最小消息模块及静态示例的具体范围，再实施；Provider 解码、Schema 校验和执行安全分别在对应阶段加入测试。
+
+## 9. L009：从单次文本调用开始实现
+
+本节于 2026-10-23 追加，仍基于 Pi Commit `7c22a93d0ed02092142fa63823e63d76aa4e2406`。依照 L007–L008 确立的问题驱动流程，第 8 节保留为当时的候选字段对照，本次先实现更小的文本场景。
+
+### 对应源码与事实
+
+- [`complete()`](../references/pi/packages/ai/src/compat.ts#L269) 接收模型、上下文与选项，调用 `stream()` 后等待 `result()`，返回完整 `AssistantMessage`，不是字符串。
+- [`stream()`](../references/pi/packages/ai/src/compat.ts#L252) 规范化上下文并选择 Provider；[`resolveApiProvider()`](../references/pi/packages/ai/src/compat.ts#L244) 在未注册 API Provider 时抛出异常。
+- [`AssistantMessageEventStream`](../references/pi/packages/ai/src/utils/event-stream.ts#L97) 在 `done` 或 `error` 事件时提取最终消息。因此 `result()` 完成不等于模型正常成功；错误也可以作为消息返回。
+- [`streamAssistantResponse()`](../references/pi/packages/agent/src/agent-loop.ts#L390) 负责调用模型流、消费事件并获取最终消息；[循环中的错误分支](../references/pi/packages/agent/src/agent-loop.ts#L254) 根据 `stopReason` 处理模型失败或取消。
+
+以上为本次选读源码的事实，未运行 Pi 测试，也未验证真实供应商请求。
+
+### 从目标推导最小实现
+
+目标限定为：调用方提交一个字符串，成功时取得完整字符串，失败时明确报错。参数位置与返回位置已经区分输入和回答，当前无需统一消息列表，也无需先添加 `role`、时间戳、来源或内容块。
+
+实现位于 [`fake.py`](../src/mini_agent_runtime/fake.py)：
+
+```python
+generate("你好")  # 返回：模拟回答：你好
+generate("你好", error=RuntimeError("模拟失败"))  # 抛出给定异常
+```
+
+- `text` 是当前唯一业务输入；类型标注不执行运行时校验，因此非字符串显式抛出 `TypeError`，避免被格式化成看似合法的文本。
+- 固定前缀加原文本使输出确定、可观察，不需要预设回答队列或可配置 Provider 对象。空字符串、空白和换行均原样保留，没有额外的输入限制。
+- 关键字参数 `error` 仅用于教学替身的失败模拟，让同一个合法文本输入可以测试成功和失败。给定异常直接抛出，不以特殊输入文本触发失败，不转换成正常回答。
+
+这里提炼的是单次调用边界，函数名、模板回答、同步调用和异常约定均为本项目当前选择。Pi 使用结构化消息、异步事件流和终止状态；本实现没有复刻这些协议，不承诺 Pi 或真实 Provider 兼容。`error` 也不是未来真实模型接口必须保留的业务参数。
+
+### 验证与后续问题
+
+[针对性测试](../tests/test_fake.py) 的 8 个用例通过：中文、空文本、空白与换行原样保留；拒绝 `None`、数字和列表；模拟运行失败与超时时抛出同一个异常对象。验证限于 Fake Model 的输入、输出与失败契约，不证明真实模型行为、网络故障处理或流式终止语义。
+
+下一主题建议引入“下一次请求需要看到之前的问答”。届时再通过混合记录中身份不明确的具体例子，推导 `role`、`content` 和有序历史列表；当前函数没有保存跨调用历史。
