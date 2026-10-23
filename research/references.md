@@ -6,7 +6,7 @@
 
 | Repo | Role | Git remote | Pinned commit | 状态 |
 |---|---|---|---|---|
-| Pi | Main architecture | https://github.com/earendil-works/pi | `7c22a93d0ed02092142fa63823e63d76aa4e2406` | 已下载；沿用 R0 报告的有限审阅范围，本步未新增审阅 |
+| Pi | Main architecture | https://github.com/earendil-works/pi | `7c22a93d0ed02092142fa63823e63d76aa4e2406` | 已下载；R0 报告及 L005 消息专题选读，均非全仓审阅 |
 | OpenAI Agents SDK (Python) | Comparison only | https://github.com/openai/openai-agents-python | `0dc4cf152bff1f50bdc0e41f28808563406545b2` | 已下载，尚未审阅 |
 | mini-swe-agent | Comparison only | https://github.com/SWE-agent/mini-swe-agent | `04d809ceab9df28f9adaed044884180159172930` | 已下载，尚未审阅 |
 | learn-claude-code | Comparison only | https://github.com/shareAI-lab/learn-claude-code | `ce8f9f186058939da54c9d6fead78dfb5d0fd6c3` | 已下载，尚未审阅 |
@@ -35,3 +35,5 @@ git ls-files --stage references/
 克隆本项目后使用 `git submodule update --init --recursive` 恢复所记录的版本。更新参考版本应单独记录理由与差异，不默认使用 `--remote` 跟随上游。源码下载不需要安装参考项目的依赖，本步未运行它们的测试。
 
 更详细的 Pi 核心研究见 [pi-source-study.md](pi-source-study.md)。
+
+首个本地消息专题见 [pi-messages-and-tool-flow.md](pi-messages-and-tool-flow.md)，记录了选读位置、数据流和已阅读但未运行的测试断言。
