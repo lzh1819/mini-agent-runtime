@@ -1,7 +1,7 @@
 [project]
 name = "mini-agent-runtime"
 version = "0.1.0"
-description = "Add your description here"
+description = "A minimal Python agent runtime for studying Pi-inspired architecture"
 authors = [
     { name = "lizh76", email = "lizh76@asiainfo.com" }
 ]

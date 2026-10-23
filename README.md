@@ -5,7 +5,7 @@
 
 **项目定位：技术研究与学习仓库，不是持续堆功能的 AI 产品。**
 
-学习协作规则见 [`AGENTS.md`](AGENTS.md)，学习过程见 [`LEARNING.md`](LEARNING.md)。每一步按一个可讲清楚的教学目标组织，将实现或实验、验证和学习记录一起提交到 Git；提交说明引用对应学习条目。当前已建立学习记录机制，Python 包骨架整理将作为后续独立学习步骤进行。
+学习协作规则见 [`AGENTS.md`](AGENTS.md)，学习过程见 [`LEARNING.md`](LEARNING.md)。每一步按一个可讲清楚的教学目标组织，将实现或实验、验证和学习记录一起提交到 Git；提交说明引用对应学习条目。
 
 ## 1. 研究目标
 
@@ -35,6 +35,8 @@
 - **研究报告**：[`research/pi-source-study.md`](research/pi-source-study.md)
 
 **状态**：R0 核心源码路径研究已形成报告；V0 Python 实现尚待开始。R0 审阅了核心执行链及部分测试断言，且仅对 Pi 的原始 EventStream 模块做过 5 项隔离运行验证；**没有完成全仓库审计或跑通 Pi 全量测试**。后续每个专题仍需回到源码继续核对。
+
+Python 构建配置与基础包目录已经存在，包骨架已整理。当前可以构建、安装并导入 `mini_agent_runtime`，但尚无模型协议、Provider、AgentLoop、工具或 CLI。包构建验证不代表 Agent Runtime 已实现。
 
 此 README 是当前研究方案的**执行基线**，可随着新的源码证据和实验结果修订；变更应记录原因，不随意重排阶段。
 
@@ -71,12 +73,12 @@ LLM Provider
 
 | Pi 角色 | 主要责任 | Python 对应模块 |
 |---|---|---|
-| `pi-ai` | 模型与消息协议、Provider 适配、模型事件流 | `mini_agent.ai` |
-| `AgentLoop` | 模型请求、工具调用调度、Turn 与停止条件 | `mini_agent.agent.loop` |
-| `Agent` | 状态、事件监听、排队、取消、禁止重入 | `mini_agent.agent.agent` |
-| `AgentSession` | 组合内核、上下文、持久化和恢复策略 | `mini_agent.harness.session` |
-| `SessionManager` | 追加式会话条目、树形分支、上下文投影 | `mini_agent.harness.session_manager` / `projection` |
-| Compaction | 估算、切分、摘要和上下文检查点 | `mini_agent.harness.compaction` |
+| `pi-ai` | 模型与消息协议、Provider 适配、模型事件流 | `mini_agent_runtime.ai` |
+| `AgentLoop` | 模型请求、工具调用调度、Turn 与停止条件 | `mini_agent_runtime.agent.loop` |
+| `Agent` | 状态、事件监听、排队、取消、禁止重入 | `mini_agent_runtime.agent.agent` |
+| `AgentSession` | 组合内核、上下文、持久化和恢复策略 | `mini_agent_runtime.harness.session` |
+| `SessionManager` | 追加式会话条目、树形分支、上下文投影 | `mini_agent_runtime.harness.session_manager` / `projection` |
+| Compaction | 估算、切分、摘要和上下文检查点 | `mini_agent_runtime.harness.compaction` |
 
 ### 必须区分的三种数据
 
@@ -90,13 +92,46 @@ Session Entries（可追溯的原始记录）
 
 ## 4. 仓库组织
 
+### 当前包骨架与构建验证
+
+```text
+pyproject.toml                  # 项目元数据、构建后端和开发依赖
+src/
+└── mini_agent_runtime/
+    ├── __init__.py              # 包说明；导入包时执行的入口
+    └── py.typed                 # 向类型检查工具声明包提供类型信息
+```
+
+`[project].name` 中的 `mini-agent-runtime` 是发行项目名称，用于安装和查询元数据；`mini_agent_runtime` 是 Python 导入包名。当前 `uv_build` 默认将规范化后的项目名称用于查找 `src/mini_agent_runtime/`，无需增加额外配置。这个对应关系来自构建后端的约定，Python 的 `import` 本身不负责把连字符转换为下划线。
+
+`[build-system]` 指定构建后端 `uv_build` 及其版本范围；`[dependency-groups].dev` 中的 pytest 用于开发，不是包的运行时依赖。`src/` 将源码与仓库根目录分开；安装操作使包在相应 Python 环境中可导入，当前工作目录包含仓库本身并不等同于已安装包。
+
+在项目根目录执行以下实验，需要已安装 uv 和可用的 Python 3.11。临时虚拟环境用于验证实际 wheel，不依赖项目已有的可编辑安装：
+
+```bash
+uv build --wheel
+check_dir="$(mktemp -d /tmp/mini-agent-runtime-check.XXXXXX)"
+uv venv "$check_dir/venv" --python 3.11
+uv pip install --python "$check_dir/venv/bin/python" dist/mini_agent_runtime-0.1.0-py3-none-any.whl
+cd "$check_dir"
+./venv/bin/python -I -c "import mini_agent_runtime; from importlib.metadata import version; print(mini_agent_runtime.__file__); print(version('mini-agent-runtime'))"
+```
+
+预期输出为临时虚拟环境 `site-packages` 下的 `mini_agent_runtime/__init__.py` 路径，以及 `0.1.0`。`-I` 排除当前目录和 `PYTHONPATH` 对导入的影响。实验完成后当前 shell 位于临时目录，可使用 `cd -` 返回项目目录。具体实验结果见 [`LEARNING.md`](LEARNING.md) 的 L003。
+
+### 演进目标结构
+
 以下是**演进目标结构**；按里程碑渐进创建目录和文件，不需要 V0 就生成全部空模块。
 
 ```text
 mini-agent-runtime/
 ├── README.md
-├── pyproject.toml                  # 开始 Python 实现时创建
-├── src/mini_agent/
+├── AGENTS.md                       # 学习协作与提交约定
+├── LEARNING.md                     # 学习过程与实验记录
+├── pyproject.toml                  # 已有构建配置
+├── src/mini_agent_runtime/
+│   ├── __init__.py                  # 已有包入口
+│   ├── py.typed                     # 已有类型信息标记
 │   ├── ai/                         # 协议 / 模型适配
 │   │   ├── messages.py
 │   │   ├── events.py
@@ -261,7 +296,7 @@ git submodule update --init --recursive
 3. 从 **V0 的数据契约与 Fake Provider** 开工；先写失败用例，再实现最小闭环。
 4. 每完成一个里程碑，更新研究记录、行为不变量和 ADR，再开始下一主题。
 
-计划采用 **Python 3.11+、pytest 和异步协议（`async def` / `AsyncIterator`）**。V0 开始时再创建 `pyproject.toml` 和可运行代码；此时不声称仓库已经具备可执行的 Python Runtime。
+当前构建配置要求 **Python 3.11+**，已声明 pytest 开发依赖；V0 计划采用异步协议（`async def` / `AsyncIterator`）。现有包骨架支持构建与导入，执行内核将在 V0 实现。
 
 ## 10. 核心源码入口
 

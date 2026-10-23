@@ -1,2 +1,1 @@
-def hello() -> str:
-    return "Hello from mini-agent-runtime!"
+"""用于研究 Pi 风格架构的最小 Python Agent Runtime。"""
