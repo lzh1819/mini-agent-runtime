@@ -5,7 +5,7 @@
 
 **项目定位：技术研究与学习仓库，不是持续堆功能的 AI 产品。**
 
-学习协作规则见 [`AGENTS.md`](AGENTS.md)，学习过程见 [`LEARNING.md`](LEARNING.md)。每一步按一个可讲清楚的教学目标组织，将实现或实验、验证和学习记录一起提交到 Git；提交说明引用对应学习条目。
+学习协作规则见 [`AGENTS.md`](AGENTS.md)。每一步按一个可讲清楚的教学目标组织，将实现或实验、验证和对应课程笔记一起提交到 Git。课程笔记在 `lessons/` 按实际授课建立，记录教学、答疑与实现复盘；当前尚未创建课程文件。
 
 ## 1. 研究目标
 
@@ -123,7 +123,7 @@ cd "$check_dir"
 ./venv/bin/python -I -c "import mini_agent_runtime; from importlib.metadata import version; print(mini_agent_runtime.__file__); print(version('mini-agent-runtime'))"
 ```
 
-预期输出为临时虚拟环境 `site-packages` 下的 `mini_agent_runtime/__init__.py` 路径，以及 `0.1.0`。`-I` 排除当前目录和 `PYTHONPATH` 对导入的影响。实验完成后当前 shell 位于临时目录，可使用 `cd -` 返回项目目录。具体实验结果见 [`LEARNING.md`](LEARNING.md) 的 L003。
+预期输出为临时虚拟环境 `site-packages` 下的 `mini_agent_runtime/__init__.py` 路径，以及 `0.1.0`。`-I` 排除当前目录和 `PYTHONPATH` 对导入的影响。实验完成后当前 shell 位于临时目录，可使用 `cd -` 返回项目目录。早期实验记录保留在 Git 历史中，可通过 `git show 0a1988c:LEARNING.md` 查看其中的 L003。
 
 ### 演进目标结构
 
@@ -133,7 +133,7 @@ cd "$check_dir"
 mini-agent-runtime/
 ├── README.md
 ├── AGENTS.md                       # 学习协作与提交约定
-├── LEARNING.md                     # 学习过程与实验记录
+├── lessons/                        # 每课教学、答疑与复盘（按需创建）
 ├── pyproject.toml                  # 已有构建配置
 ├── src/mini_agent_runtime/
 │   ├── __init__.py                  # 已有包入口
@@ -260,7 +260,7 @@ V1–V5 的以下描述是对应主题的候选方案与验收关注点；具体
     ↓
 回对 Pi，讲解结果、差异与支持边界
     ↓
-更新学习记录与必要的研究笔记，完成本地 Git 提交
+完善本课笔记与必要的研究证据，完成本地 Git 提交
     ↓
 更新当前状态，进入下一轮
 ```
@@ -300,10 +300,10 @@ V1–V5 的以下描述是对应主题的候选方案与验收关注点；具体
 
 ## 9. 开始学习
 
-1. 查看当前状态和 [`LEARNING.md`](LEARNING.md)，借助 [`research/pi-source-study.md`](research/pi-source-study.md) 定位已有研究与待解决问题。
+1. 查看当前状态、已有课程笔记及 Git 历史，借助 [`research/pi-source-study.md`](research/pi-source-study.md) 定位已有研究与待解决问题。
 2. 按 [`research/references.md`](research/references.md) 核对参考版本。已有消息与工具调用研究见 [`research/pi-messages-and-tool-flow.md`](research/pi-messages-and-tool-flow.md)，其中字段对照供查阅，不是必须实现的清单。
 3. 当前已用字符串输入与输出实现单次文本 Fake Model，范围和源码依据见 [`research/pi-messages-and-tool-flow.md`](research/pi-messages-and-tool-flow.md) 第 9 节。下一主题建议研究“下一次请求需要知道之前的问答”，再推导角色、内容和历史列表。
-4. 每完成一个教学步骤，验证并讲解结果，更新学习记录、必要的研究证据与本地提交，再分析下一目标。
+4. 每完成一个教学步骤，验证并讲解结果，完善本课笔记、必要的研究证据与本地提交，再分析下一目标。
 
 当前构建配置要求 **Python 3.11+**，已声明 pytest 开发依赖。现有包骨架支持构建与导入；同步或异步协议、流式接口等具体选择，在相应学习步骤中根据目标与证据确定。
 
