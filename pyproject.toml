@@ -1,0 +1,18 @@
+[project]
+name = "mini-agent-runtime"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "lizh76", email = "lizh76@asiainfo.com" }
+]
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.9.2,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
