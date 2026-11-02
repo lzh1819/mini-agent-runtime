@@ -1,74 +1,53 @@
-# 课堂样例：从项目问答到最小消息定义
+# 消息：模型和程序怎样交接一次任务
 
-备课说明：本例按用户对知识前提、课程粒度和推导连贯性的反馈修订，尚未获得逐项审阅认可。前置知识是上一课的字符串调用，以及 Python 字符串、字典、列表和函数。Pi 源码固定为 `7c22a93d0ed02092142fa63823e63d76aa4e2406`。代码与文件内容为教学示例，不表示仓库已实现或模型已执行；本段不作为课堂开场。
+备课信息：写法参照 learn-claude-code 固定版本 `ce8f9f186058939da54c9d6fead78dfb5d0fd6c3` 的 [s01](../../../references/learn-claude-code/s01_agent_loop/README.zh.md)、[s02](../../../references/learn-claude-code/s02_tool_use/README.zh.md)；消息语义依据 Pi `7c22a93d0ed02092142fa63823e63d76aa4e2406`。下文模型输出和读取结果是手工示例，类型是本课拟议定义，尚未获得逐项确认。本段不作为课堂开场。
 
 ---
 
-**一、一次项目问答逐渐需要记录什么**
+## 一、一次问答，几次交接
 
-上一课的函数接收一段文本，返回一段文本：
+用户问：“比较 a.txt 和 b.txt 的内容。”
 
-```python
-generate("项目说明：这是一个用于学习 Agent 的 Python 项目。请介绍它。")
-```
+模型收到了文件名，却没有文件内容。你可以自己读文件，把内容交给它；如果它还需要别的信息，你再取回来、再发给它。
 
-回答所需的项目说明就在输入中。假设回答之后，用户接着说“再简短一些”。如果下一次只传入这几个字，前面的说明和回答都丢了。
-
-把之前的交互按顺序保存，下次一起传入，就能保留这些信息。但只有一串文字，无法明确识别哪些来自用户、哪些是助手回答。可以先约定双方严格交替；用户在回答前连续补充“还要说明学习用途”时，这个位置约定就不成立了。
-
-因此，每条记录需要同时保存来源和内容。用 `role` 表达来源、`content` 保存内容，可以得到：
-
-```python
-dialogue = [
-    {"role": "user", "content": "请根据这段项目说明介绍项目：……"},
-    {"role": "assistant", "content": "这是一个用于学习 Agent 的 Python 项目。"},
-    {"role": "user", "content": "再简短一些。"},
-]
-```
-
-列表保留先后关系，每条记录自己说明身份，不再依赖发言必须交替。
-
-这个项目问答应用还约定：回答必须说明依据，无法确认时如实说明。用户可以不断更换问题，这项要求却一直有效。最直接的做法，是把它作为应用配置，和本次对话一起交给模型。此时需要区分两项输入：应用持续提供的要求，以及用户当前提出的任务；不必把要求伪装成用户曾经说过的话。
-
-接着，用户不再粘贴说明，改为“读取 README.md，介绍这个项目”。程序可以先读取这个确定的文件，再把内容放入输入。这个办法足以完成当前任务，模型无需提出读取请求。
-
-用户进一步要求：“检查 README.md 与它提到的实现是否一致。”README 写着 a.py 负责读取、b.py 负责写入。要检查一致性，还得查看相应实现。
-
-程序可以继续写固定步骤：读 README，再读 a.py 和 b.py。但换一个项目，说明中提到的文件和需要检查的内容都会变化。如果希望模型根据已经读到的说明决定下一步查看什么，程序就需要接收模型提出的操作请求，再执行并交回结果。
-
-双方先约定程序提供 `read_file(path)`：它接收一个路径字符串，返回文件内容。模型产生“读取哪个路径”的请求，实际打开文件的动作仍由程序完成。这样的可执行操作称为工具。
-
-请求如果只是“请帮我读一下 a.py”，程序还要从句子中识别操作和参数。把它们分开记录，就可以明确交接：
-
-```python
-{"name": "read_file", "arguments": {"path": "a.py"}}
-```
-
-工具执行后，结果也要进入下一次输入。否则模型虽然提出了读取请求，仍然看不到读取内容。此时一段交互包含：
+现在希望程序接手这些来回。程序提供 `read_file(path)`，负责读取文件；模型按约定提出读取请求，程序执行后把结果交回。一次交互可能是：
 
 ```text
-用户提出检查任务
-模型请求读取 README
-程序交回 README 内容
-模型根据内容请求读取 a.py 和 b.py
-程序交回读取结果
-模型根据结果作答
+应用要求：依据实际内容回答，读取失败时说明原因。
+用户：比较 a.txt 和 b.txt 的内容。
+模型：我先读取这两个文件。
+      请求 read_file(path="a.txt")，标识 read-a
+      请求 read_file(path="b.txt")，标识 read-b
+程序：read-a 读取成功，内容是“苹果”。
+      read-b 读取失败，原因是文件不存在。
+模型：a.txt 的内容是苹果；b.txt 无法读取，暂时不能比较。
 ```
 
-这里新增了来自执行程序的信息。记录时需要把它和用户输入、模型输出区别开，并保留它回答的是哪个读取请求。
+程序要处理这段交互，不能只收到混在一起的文字。模型说“我先读取”，表示它提出了动作；只有程序执行后交回的记录，才表示读取已经发生。两者虽然都出现在对话中，接收方要做的事却不同。
 
-再看模型的同一次输出：它可能先说“我再检查这两个实现”，接着提出两个读取请求。现在需要区分面向用户的文字与交给程序执行的请求，并能在一份助手输出中容纳它们。把文字和调用分别存入两个字段可以做到；把它们组织成带类别的内容序列，也可以做到。前一种方式分开保存两类数据，后一种方式还能直接表达它们在同一输出中的排列。
+因此，每条记录需要说明来源，并保存实际内容。用户的问题交给模型；模型的读取请求交给程序；程序的结果再交给模型。按交互顺序保存这些记录，下一次请求才能拿到前面的信息。
 
-两个请求都调用 `read_file`，所以工具名不足以说明一条结果属于哪次调用。固定按位置对应需要始终遵守同一顺序约定；若结果本身带有请求标识，就可以直接查到归属。这是在保存内容之外，还需要保留的一项关联信息。
+读取请求还需要明确“做什么、带什么参数”。`read_file` 是操作名，`path` 是参数。程序按这些信息执行，不必从“请帮我读一下这个文件”这样的句子里猜测。
 
-如果 a.py 读取成功，b.py 不存在，程序还需要准确表达一项成功、一项失败。只给出“文件不存在”这几个字，无法区分它是错误说明，还是文件恰好包含的正文。因此，工具结果需要分别保存执行状态与返回文本。
+两次操作都叫 `read_file`。返回结果中的 `read-a`、`read-b` 用于指出各自回答哪次请求；名字相同也不会混淆。成功与失败则单独标记，避免把错误说明误当作文件正文。
 
-**二、这些信息怎样对应到 Pi 和 Python**
+这段交互里，模型同时产生了一句话和两个操作请求。所以助手输出既要容纳文字，也要容纳供程序处理的结构化数据。它们都来自模型，但用途不同。
 
-最先需要表达的是用户输入的来源和内容。Pi 的 [UserMessage](../../../references/pi/packages/ai/src/types.ts#L574) 用 `role: "user"` 标记来源，`content` 保存内容。Python 可以用 `TypedDict` 描述相应字典，`Literal` 表达固定的角色值：
+## 二、把每次交接写成代码
+
+### 1. 记录应用要求和用户问题
+
+应用给出持续有效的行为要求，用户给出本次任务。Pi 用 [SystemMessage](../../../references/pi/packages/ai/src/types.ts#L556) 和 [UserMessage](../../../references/pi/packages/ai/src/types.ts#L574) 区分它们，`role` 表达来源，`content` 保存内容。
+
+Python 可以用 `TypedDict` 描述字典字段，`Literal` 表达固定的角色值：
 
 ```python
 from typing import Literal, TypedDict
+
+
+class SystemMessage(TypedDict):
+    role: Literal["system"]
+    content: str
 
 
 class UserMessage(TypedDict):
@@ -76,21 +55,13 @@ class UserMessage(TypedDict):
     content: str
 ```
 
-`TypedDict` 是字段形状的声明，运行时的对象仍然是字典。
+例如，`{"role": "user", "content": "比较 a.txt 和 b.txt 的内容。"}` 就明确记录了一次用户输入。这里的消息仍然是普通字典，类型声明方便阅读与检查，不会自行执行校验。
 
-应用持续提供的要求，可以像前面所说的那样单独配置。Pi 选择将它放进 [SystemMessage](../../../references/pi/packages/ai/src/types.ts#L556)，在消息序列中明确标为应用指令；[请求上下文规范化](../../../references/pi/packages/ai/src/utils/transcript.ts#L30) 也会把入口提供的 `systemPrompt` 整理成这种消息。
+### 2. 记录模型的话和读取请求
 
-因此，区分应用要求与用户任务是需要表达的信息，把它们统一组织为不同角色的消息是 Pi 的表示选择。我们采用这一组织方式：
+Pi 的 [AssistantMessage](../../../references/pi/packages/ai/src/types.ts#L580) 将内容组织成列表。列表中的每项带有 `type`：[TextContent](../../../references/pi/packages/ai/src/types.ts#L422) 保存文字，[ToolCall](../../../references/pi/packages/ai/src/types.ts#L444) 保存工具调用。
 
-```python
-class SystemMessage(TypedDict):
-    role: Literal["system"]
-    content: str
-```
-
-接下来是助手输出。前面已经遇到“文字加两个读取请求”，Pi 的 [AssistantMessage](../../../references/pi/packages/ai/src/types.ts#L580) 采用有序内容块列表。每块用 `type` 表明类别：普通文字是 [TextContent](../../../references/pi/packages/ai/src/types.ts#L422)，操作请求是 [ToolCall](../../../references/pi/packages/ai/src/types.ts#L444)。这正好能够表达混合内容及其先后关系，我们也选择这种表示。
-
-工具调用中的 `name`、`arguments` 对应操作和参数。`id` 是请求标识，稍后结果会引用它；当前读取操作只接收字符串路径，所以这个例子的参数类型为 `dict[str, str]`。
+这正好可以表示同一次输出中的一句话和两个请求。选择内容列表，是为了把不同用途的内容及其顺序放在同一份输出中。
 
 ```python
 class TextContent(TypedDict):
@@ -110,83 +81,114 @@ class AssistantMessage(TypedDict):
     content: list[TextContent | ToolCall]
 ```
 
-`TextContent | ToolCall` 表示每项可以是文字或调用。外层 `role` 说明这次输出来自助手，内层 `type` 说明具体内容是什么。调用也是模型提出的，因此仍属于助手消息。
+`name` 与 `arguments` 告诉程序执行什么，`id` 标记这是哪一次请求。本例的读取工具只接收字符串路径，因此参数写为 `dict[str, str]`。`TextContent | ToolCall` 表示每项可以是文字或调用。
 
-然后是程序交回的结果。Pi 的 [ToolResultMessage](../../../references/pi/packages/ai/src/types.ts#L635) 将角色标记为 `toolResult`；[结果构造函数](../../../references/pi/packages/agent/src/agent-loop.ts#L940) 把请求的 `id` 写入结果的 `toolCallId`，并通过 `isError` 表达失败状态。
+把模型的这次输出写出来：
 
-Python 沿用这项关联，将字段改为常见的下划线命名。本例返回的是文件文本或错误说明，结果内容使用字符串：
+```python
+call_a: ToolCall = {
+    "type": "toolCall", "id": "read-a", "name": "read_file",
+    "arguments": {"path": "a.txt"},
+}
+call_b: ToolCall = {
+    "type": "toolCall", "id": "read-b", "name": "read_file",
+    "arguments": {"path": "b.txt"},
+}
+request: AssistantMessage = {
+    "role": "assistant",
+    "content": [
+        {"type": "text", "text": "我先读取这两个文件。"},
+        call_a,
+        call_b,
+    ],
+}
+```
+
+程序接收 `request` 后，读取每项的 `type`。文字用于展示；遇到 `toolCall`，就能取出操作名和参数。Pi 的 [工具处理路径](../../../references/pi/packages/agent/src/agent-loop.ts#L268) 正是在助手内容中筛选调用，再交给执行管线。
+
+外层 `role` 回答“谁产生的”，内层 `type` 回答“这项内容是什么”。工具调用由模型提出，因此放在助手消息里。
+
+### 3. 把执行结果交回来
+
+Pi 用 [ToolResultMessage](../../../references/pi/packages/ai/src/types.ts#L635) 记录执行结果。[结果构造函数](../../../references/pi/packages/agent/src/agent-loop.ts#L940) 把请求的 `id` 写入结果的 `toolCallId`，同时保留 `isError`。
+
+Python 采用下划线命名；结果中的文本复用刚才定义的 `TextContent`：
 
 ```python
 class ToolResultMessage(TypedDict):
     role: Literal["toolResult"]
     tool_call_id: str
-    content: str
+    content: list[TextContent]
     is_error: bool
-
-
-Message = SystemMessage | UserMessage | AssistantMessage | ToolResultMessage
 ```
 
-最后一行表示一条消息可以是这四类中的任意一种。各类型保留自己需要的字段：助手保存混合内容，工具结果保存调用关联与状态。
-
-将上面的代码块依次放进 `messages.py`，就得到了这个例子所需的完整消息定义。下面把它们组合成一段记录；模型请求、文件内容和错误均为手工构造的数据：
+两个读取结果分别是：
 
 ```python
+result_a: ToolResultMessage = {
+    "role": "toolResult", "tool_call_id": "read-a",
+    "content": [{"type": "text", "text": "苹果"}],
+    "is_error": False,
+}
+result_b: ToolResultMessage = {
+    "role": "toolResult", "tool_call_id": "read-b",
+    "content": [{"type": "text", "text": "文件不存在：b.txt"}],
+    "is_error": True,
+}
+```
+
+`result_b` 的 `tool_call_id` 指向 `call_b`，因此能确定失败的是读取 b.txt 的请求。`content` 说明原因，`is_error` 明确标记失败。
+
+### 4. 组合成一次完整交互
+
+消息列表需要容纳应用指令、用户问题、助手输出和工具结果。用联合类型描述这四种可能：
+
+```python
+Message = SystemMessage | UserMessage | AssistantMessage | ToolResultMessage
+
 history: list[Message] = [
     {
         "role": "system",
-        "content": "回答要说明依据，无法确认时如实说明。可请求 read_file(path)，path 是路径字符串。",
+        "content": "依据实际内容回答；可请求 read_file(path)，读取失败时说明原因。",
     },
-    {"role": "user", "content": "检查 README.md 与其中提到的实现是否一致。"},
-    {
-        "role": "assistant",
-        "content": [{
-            "type": "toolCall", "id": "read-intro", "name": "read_file",
-            "arguments": {"path": "README.md"},
-        }],
-    },
-    {
-        "role": "toolResult", "tool_call_id": "read-intro",
-        "content": "a.py 提供读取函数；b.py 提供写入函数。", "is_error": False,
-    },
-    {
-        "role": "assistant",
-        "content": [
-            {"type": "text", "text": "我再检查这两个实现。"},
-            {
-                "type": "toolCall", "id": "read-a", "name": "read_file",
-                "arguments": {"path": "a.py"},
-            },
-            {
-                "type": "toolCall", "id": "read-b", "name": "read_file",
-                "arguments": {"path": "b.py"},
-            },
-        ],
-    },
-    {
-        "role": "toolResult", "tool_call_id": "read-a",
-        "content": "def read(): return 'ok'", "is_error": False,
-    },
-    {
-        "role": "toolResult", "tool_call_id": "read-b",
-        "content": "文件不存在：b.py", "is_error": True,
-    },
+    {"role": "user", "content": "比较 a.txt 和 b.txt 的内容。"},
+    request,
+    result_a,
+    result_b,
     {
         "role": "assistant",
         "content": [{
             "type": "text",
-            "text": "a.py 的 read() 返回固定字符串，并未读取文件，与说明不符；b.py 未找到，无法核对写入实现。",
+            "text": "a.txt 的内容是苹果；b.txt 无法读取，暂时不能比较。",
         }],
     },
 ]
 ```
 
-这份记录可以从头追踪：第一次读取获得文件线索，第二次助手输出根据线索提出两个请求，两个结果分别引用 `read-a` 和 `read-b`，最后的回答同时使用成功内容与失败状态。
+第一次模型请求携带应用指令和用户问题。程序取得 `request`，执行后将请求与对应结果追加到列表，再次调用模型；最后一条就是这次模型回答的记录。
 
-Pi 的 [工具处理路径](../../../references/pi/packages/agent/src/agent-loop.ts#L268) 从助手内容中筛选调用，并将执行结果加入消息列表，下一次模型请求便能取得结果。消息类型描述了这条数据流需要交接的信息，实际执行由调用代码完成。
+上面的类型块组成 `messages.py` 的定义；请求、结果与历史组成一份交互样例。模型接口会负责将实际响应转换成这些内部类型。
 
-`TypedDict` 不自动检查外部数据。实施时，接收消息的边界要检查角色、内容形状和字段类型；处理工具记录时，还要检查请求标识是否重复、结果是否指向已知请求，以及一项请求是否被重复交回结果。
+### 试一下
 
-本课涉及 `messages.py` 的定义、`tests/test_messages.py` 的交互样例与上述契约检查，以及对应课程笔记和 README。现有文本 Fake 的输入范围保持明确，不能让它接受自己不会处理的工具消息。验证以这段交互为主：检查四类消息、两种助手内容、请求与结果的对应，以及成功和失败路径，特别是未知或重复关联不能被当成正常记录。
+将上面的 Python 代码块依次放入一个临时脚本，追加以下断言。它们只使用样例数据，不会读取真实文件：
 
-随后可以沿着已经出现的请求与结果，研究调用代码怎样执行一次读取并构造对应的工具结果。
+```python
+calls = {
+    item["id"]: item
+    for item in request["content"]
+    if item["type"] == "toolCall"
+}
+assert calls[result_b["tool_call_id"]]["arguments"]["path"] == "b.txt"
+assert result_b["is_error"] is True
+assert result_a["content"][0]["text"] == "苹果"
+assert [message["role"] for message in history] == [
+    "system", "user", "assistant", "toolResult", "toolResult", "assistant"
+]
+```
+
+观察两个位置：调用与结果怎样通过同一个标识关联；同一条助手消息里的文字和调用怎样通过 `type` 区分。
+
+本课的实施范围是消息定义、相应输入校验、交互样例及其测试，并同步课程笔记和 README。当前文本 Fake 只能接收自己支持的纯文本消息，调整类型时需要同步其输入声明和检查。
+
+接下来可以沿着 `ToolCall` 到 `ToolResultMessage` 的这段交接，实现一次实际读取：按名称找到函数，检查参数，执行，再把成功或失败构造成对应结果。

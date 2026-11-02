@@ -9,7 +9,7 @@
 | Pi | Main architecture | https://github.com/earendil-works/pi | `7c22a93d0ed02092142fa63823e63d76aa4e2406` | 已下载；R0 报告及 L005 消息专题选读，均非全仓审阅 |
 | OpenAI Agents SDK (Python) | Comparison only | https://github.com/openai/openai-agents-python | `0dc4cf152bff1f50bdc0e41f28808563406545b2` | 已下载，尚未审阅 |
 | mini-swe-agent | Comparison only | https://github.com/SWE-agent/mini-swe-agent | `04d809ceab9df28f9adaed044884180159172930` | 已下载，尚未审阅 |
-| learn-claude-code | Comparison only | https://github.com/shareAI-lab/learn-claude-code | `ce8f9f186058939da54c9d6fead78dfb5d0fd6c3` | 已下载，尚未审阅 |
+| learn-claude-code | Comparison only | https://github.com/shareAI-lab/learn-claude-code | `ce8f9f186058939da54c9d6fead78dfb5d0fd6c3` | 已下载；选读 s01、s02 中文教学文档用于写法对照，未运行代码或测试 |
 
 ## 版本管理约定
 
@@ -37,3 +37,5 @@ git ls-files --stage references/
 更详细的 Pi 核心研究见 [pi-source-study.md](pi-source-study.md)。
 
 首个本地消息专题见 [pi-messages-and-tool-flow.md](pi-messages-and-tool-flow.md)，记录了选读位置、数据流和已阅读但未运行的测试断言。
+
+2026-11-02 选读 learn-claude-code 的 [s01](../references/learn-claude-code/s01_agent_loop/README.zh.md) 与 [s02](../references/learn-claude-code/s02_tool_use/README.zh.md) 中文文档，对照具体问题、工作过程、分步代码与观察结果的教学组织。应用位置为 [教学 skill 的消息样例](../skills/pi-guided-lesson/references/message-definitions-lesson.md)。本次只参考写法；样例的消息角色、内容块与调用结果关联仍依据固定版本 Pi，不将 Anthropic 的工具结果格式直接当作 Pi 协议。
