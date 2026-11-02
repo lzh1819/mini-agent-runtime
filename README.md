@@ -207,7 +207,7 @@ Pi 固定到研究报告的 `7c22a93d0ed02092142fa63823e63d76aa4e2406`。其余�
 
 ### V0：Pi 风格的最小执行闭环
 
-**候选范围**：从一次文本请求与回答所需的数据关系开始，再按具体问题逐步引入 Fake Provider、AgentLoop 和工具调用。模型事件、Agent 事件及只读工具的具体形态在相应步骤中确定；初版工具可顺序执行。完整 Streaming UI、Session 持久化和摘要留待后续主题。
+**候选范围**：在已有单次文本 Fake Model 的基础上，下一课围绕一次完整工具调用闭环，学习消息、模拟模型、工具执行和循环之间的数据流。用确定性模型与简单工具先验证直接回答、请求工具后再次调用模型及失败行为；模型事件、真实 Provider 等具体形态按后续场景确定。
 
 **阶段验收候选**：直接回答、一次及多轮 Tool Calling、同一响应的多个工具调用，以及未知工具、非法参数、模型报错、`length` 截断时不执行工具、达到执行预算停止等边界。每一步先明确实际支持范围与完成标准；开始支持相应路径时，同步验证其错误行为。按已实现机制检查调用 ID、下一次模型输入、模型调用次数及事件顺序。
 
@@ -302,7 +302,7 @@ V1–V5 的以下描述是对应主题的候选方案与验收关注点；具体
 
 1. 查看当前状态、已有课程笔记及 Git 历史，借助 [`research/pi-source-study.md`](research/pi-source-study.md) 定位已有研究与待解决问题。
 2. 按 [`research/references.md`](research/references.md) 核对参考版本。已有消息与工具调用研究见 [`research/pi-messages-and-tool-flow.md`](research/pi-messages-and-tool-flow.md)，其中字段对照供查阅，不是必须实现的清单。
-3. 当前已用字符串输入与输出实现单次文本 Fake Model，范围和源码依据见 [`research/pi-messages-and-tool-flow.md`](research/pi-messages-and-tool-flow.md) 第 9 节。下一课建议从需要读取文件的问答出发，完整推导消息角色、助手内容、工具请求与结果关联，并定义对应的最小消息契约。
+3. 当前已用字符串输入与输出实现单次文本 Fake Model，范围和源码依据见 [`research/pi-messages-and-tool-flow.md`](research/pi-messages-and-tool-flow.md) 第 9 节。下一课研究最小工具调用闭环：模型提出请求、程序执行工具、将结果交回模型并取得回答；消息定义与循环一起讲解和验证。课程样例见 [`minimal-agent-loop-lesson.md`](skills/pi-guided-lesson/references/minimal-agent-loop-lesson.md)。
 4. 每完成一个教学步骤，验证并讲解结果，完善本课笔记、必要的研究证据与本地提交，再分析下一目标。
 
 当前构建配置要求 **Python 3.11+**，已声明 pytest 开发依赖。现有包骨架支持构建与导入；同步或异步协议、流式接口等具体选择，在相应学习步骤中根据目标与证据确定。

@@ -38,4 +38,4 @@ git ls-files --stage references/
 
 首个本地消息专题见 [pi-messages-and-tool-flow.md](pi-messages-and-tool-flow.md)，记录了选读位置、数据流和已阅读但未运行的测试断言。
 
-2026-11-02 选读 learn-claude-code 的 [s01](../references/learn-claude-code/s01_agent_loop/README.zh.md) 与 [s02](../references/learn-claude-code/s02_tool_use/README.zh.md) 中文文档，对照具体问题、工作过程、分步代码与观察结果的教学组织。应用位置为 [教学 skill 的消息样例](../skills/pi-guided-lesson/references/message-definitions-lesson.md)。本次只参考写法；样例的消息角色、内容块与调用结果关联仍依据固定版本 Pi，不将 Anthropic 的工具结果格式直接当作 Pi 协议。
+2026-11-02 选读 learn-claude-code 的 [s01](../references/learn-claude-code/s01_agent_loop/README.zh.md) 与 [s02](../references/learn-claude-code/s02_tool_use/README.zh.md) 中文文档，对照具体问题、完整执行闭环、分步代码与观察结果的教学组织。应用位置为 [教学 skill 的最小闭环样例](../skills/pi-guided-lesson/references/minimal-agent-loop-lesson.md)。本次只参考写法；样例的消息角色、内容块与调用结果关联仍依据固定版本 Pi，不将 Anthropic 的工具结果格式直接当作 Pi 协议。
