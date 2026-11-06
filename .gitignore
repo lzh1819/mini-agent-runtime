@@ -5,6 +5,16 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+.transcripts/
+.task_outputs/
+.memory/
+.tasks/
+.scheduled_tasks.json
+.scheduled_tasks.json.tmp
+.scheduled_tasks.json.*.tmp
+.mailboxes/
+.worktrees/
+.runtime/
 
 # Local agent environment and credentials are not project sources.
 .agents/
@@ -13,3 +23,5 @@ build/
 .env
 .env.*
 !.env.example
+
+/docs
